@@ -5,9 +5,12 @@ Reinforcement learning (RL)
 
 .. autosummary::
 
-    GrpoConfig
-    GrpoLearner
+    GRPOConfig
+    GRPOLearner
     RewardFn
+
+    PPOConfig
+    PPOLearner
 
     ClusterConfig
     RLCluster
@@ -15,18 +18,28 @@ Reinforcement learning (RL)
     Role
     RolloutConfig
 
+-------
 
-.. autoclass:: GrpoConfig
+.. autoclass:: GRPOConfig
 
 -------
 
-.. autoclass:: GrpoLearner
+.. autoclass:: GRPOLearner
 
 -------
 
 .. autoclass:: RewardFn
 
 -------
+
+.. autoclass:: PPOConfig
+
+-------
+
+.. autoclass:: PPOLearner
+
+-------
+
 
 .. autoclass:: ClusterConfig
 

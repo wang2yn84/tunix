@@ -8,6 +8,7 @@ Generation
     Sampler
     CacheConfig
 
+----
 
 .. autoclass:: Sampler
 

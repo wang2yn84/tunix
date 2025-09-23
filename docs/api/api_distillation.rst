@@ -8,6 +8,7 @@ Distillation
     DistillationTrainer
     DistillationTrainingConfig
 
+----
 
 .. autoclass:: DistillationTrainer
 

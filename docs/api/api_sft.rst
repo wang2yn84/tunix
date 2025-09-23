@@ -7,10 +7,15 @@ Supervised fine-tuning (SFT)
 
     PeftTrainer
     TrainingConfig
-    DpoTrainer
-    DpoTrainingConfig
+
+    DPOTrainer
+    DPOTrainingConfig
+
     MetricsLogger
     MetricsLoggerOptions
+
+
+-------
 
 
 .. autoclass:: PeftTrainer
@@ -21,11 +26,11 @@ Supervised fine-tuning (SFT)
 
 -------
 
-.. autoclass:: DpoTrainer
+.. autoclass:: DPOTrainer
 
 -------
 
-.. autoclass:: DpoTrainingConfig
+.. autoclass:: DPOTrainingConfig
 
 -------
 
