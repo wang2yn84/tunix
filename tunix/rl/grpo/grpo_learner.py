@@ -43,10 +43,10 @@ class GRPOConfig:
   """Configuration for GRPO algorithm.
 
   Parameters:
-    num_generations: The number of times the policy generates multiple responses
-      for a given prompt within a single training step. This corresponds to 'G'
-      in Algorithm 1 in the paper. A higher value means more samples are used to
-      compute relative advantages.
+    num_generations: The number of times the policy generates multiple
+      responses for a given prompt within a single training step. This
+      corresponds to 'G' in Algorithm 1 in the paper. A higher value means
+      more samples are used to compute relative advantages.
     num_iterations: The number of iterations per batch (𝜇 in GRPO algo 1).
     beta: The coefficient for the KL divergence penalty (𝛽) in the GRPO loss
       function. This term prevents policy updates from deviating too far from
@@ -54,8 +54,8 @@ class GRPOConfig:
     epsilon: Epsilon value for clipping (𝜀 in GRPO loss in paper). Similar to
       PPO, it ensures stable updates.
     loss_algo: use GRPO or GSPO for loss computation. GRPO loss is per-batch
-      normalized instead of per-response normalized as mentioned in the paper.
-      For GSPO, we use gspo-token loss which is more flexible.
+      normalized instead of per-response normalized as mentioned in the
+      paper. For GSPO, we use gspo-token loss which is more flexible.
 
   References:
     - GRPO: https://arxiv.org/abs/2402.03300
@@ -107,19 +107,25 @@ class GRPOLearner(rl_learner.RLLearner):
 
     Args:
       rl_cluster: RL cluster containing actor, reference and reward models.
-      reward_fns: A single callable or a list of callables that compute a scalar
-        reward for given prompts and completions. Each function should accept
-        `prompts`, `completions` and optional keyword arguments, and return a
-        list of float rewards.
+      reward_fns: A single callable or a list of callables that compute a
+        scalar reward for given prompts and completions. Each function should
+        accept `prompts`, `completions` and optional keyword arguments, and
+        return a list of float rewards.
       grpo_config: An instance of `GRPOConfig` containing all GRPO specific
         parameters.
       metric_fns: A sequence of callables that compute metrics for the
         completions. Each callable should accept ``prompts``, ``completions``,
-        ``rewards``, ``advantages`` and optional keyword arguments, and return a
-        dictionary of metric names to tuples of ``(metric_value, aggregation_fn)``:
+        ``rewards``, ``advantages`` and optional keyword arguments, and return
+        a dictionary of metric names to tuples of
+        ``(metric_value, aggregation_fn)``:
 
-           >>> def metric_fn(prompts, completions, rewards, advantages, **kargs):
-           ...    return { ...  "prompt_min_len": (min(len(p) for p in prompts), np.min), ... }
+           >>> def metric_fn(
+           ...     prompts, completions, rewards, advantages, **kargs
+           ... ):
+           ...     return {
+           ...       # ...
+           ...       "prompt_min_len": (min(len(p) for p in prompts), np.min),
+           ...       # ... }
     """
     self.grpo_config = grpo_config
     super().__init__(
@@ -160,7 +166,7 @@ class GRPOLearner(rl_learner.RLLearner):
       training_input: TrainingInputT,
       mode: rl_cluster_lib.Mode = rl_cluster_lib.Mode.TRAIN,
   ) -> TrainExample:
-    """Generates text completions and computes the advantages for GRPO training.
+    """Generate text completions and compute the advantages for GRPO training.
 
     Args:
       training_input: A dictionary containing the training input data,
@@ -336,11 +342,11 @@ class GRPOLearner(rl_learner.RLLearner):
             Update the old policy model πθold ← πθ
             Sample G outputs {oi}G_i=1 ~ πθold(· | q) for each question q ∈ D♭
             Compute rewards {ri}G_i=1 for each sampled output oi by running rφ
-            Compute Âi,t for the t-th token of oi through group relative advantage
-            estimation.
+            Compute Âi,t for the t-th token of oi through group relative
+            advantage estimation.
             for GRPO iteration = 1, ..., μ do
-              Update the policy model πθ by maximizing the GRPO objective (Equation
-              21)
+              Update the policy model πθ by maximizing the GRPO objective
+              (Equation 21)
           Update rφ through continuous training using a replay mechanism.
         Output πθ
 
@@ -349,8 +355,8 @@ class GRPOLearner(rl_learner.RLLearner):
         1. The outer loop (I) is ignored for now because we never update the
            reference model for now.
 
-        2. Currently sample and train hold the same referece to the model. So we
-           also omit the step to update the sampler model.
+        2. Currently sample and train hold the same referece to the model. So
+           we also omit the step to update the sampler model.
 
     Args:
       train_ds: An iterable of training input data, where each element is a
@@ -374,8 +380,8 @@ def grpo_loss_fn(model, train_example, beta, epsilon, loss_algo):
     train_example: A `TrainExample` instance containing the processed input
       data, including prompt IDs, completion IDs, masks, advantages, and
       per-token log probabilities from the reference and policy models.
-    beta: The coefficient for the KL divergence penalty. A value of 0.0 means no
-      KL penalty is applied.
+    beta: The coefficient for the KL divergence penalty. A value of 0.0 means
+      no KL penalty is applied.
     epsilon: Epsilon value for clipping.
     loss_algo: The loss algorithm to use. Can be grpo or gspo-token.
 
