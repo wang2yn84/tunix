@@ -17,11 +17,11 @@
 # Reference: https://www.together.ai/blog/deepswe
 #
 # Usage:
-#   python -m tunix.cli.agentic_grpo_main \
+#   python -m tunix.cli.grpo_main \
 #       examples/deepswe/configs/qwen3_32b.yaml
 #
 # Override individual keys on the command line, e.g.:
-#   python -m tunix.cli.agentic_grpo_main examples/deepswe/configs/qwen3_32b.yaml \
+#   python -m tunix.cli.grpo_main examples/deepswe/configs/qwen3_32b.yaml \
 #       rollout_engine=sglang_jax \
 #       agentic_grpo_config.max_turns=10
 
@@ -91,6 +91,7 @@ train_fraction: 1.0
 reward_functions: []
 
 verl_compatible: false
+training_mode: "agentic_grpo"
 
 # ========================
 # Rollout engine
