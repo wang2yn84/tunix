@@ -18,11 +18,11 @@
 #   https://pretty-radio-b75.notion.site/DeepScaleR-Surpassing-O1-Preview-with-a-1-5B-Model-by-Scaling-RL-19681902c1468005bed8ca303013a4e2
 #
 # Usage:
-#   python -m tunix.cli.agentic_grpo_main \
+#   python -m tunix.cli.grpo_main \
 #       examples/deepscaler/configs/deepseek_r1_distill_qwen_1.5b.yaml
 #
 # Override individual keys on the command line, e.g.:
-#   python -m tunix.cli.agentic_grpo_main \
+#   python -m tunix.cli.grpo_main \
 #       examples/deepscaler/configs/deepseek_r1_distill_qwen_1.5b.yaml \
 #       rollout_engine=vllm \
 #       agentic_grpo_config.num_generations=4
@@ -93,6 +93,7 @@ reward_functions:
   - "tunix/utils/math_rewards.py"
 
 verl_compatible: false
+training_mode: "agentic_grpo"
 
 # ========================
 # Rollout engine
