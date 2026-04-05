@@ -1,0 +1,212 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# DeepSWE recipe: Qwen3-32B on R2E-Gym software engineering tasks
+#
+# Reference: https://www.together.ai/blog/deepswe
+#
+# Usage:
+#   python -m tunix.cli.agentic_grpo_main \
+#       examples/deepswe/configs/qwen3_32b.yaml
+#
+# Override individual keys on the command line, e.g.:
+#   python -m tunix.cli.agentic_grpo_main examples/deepswe/configs/qwen3_32b.yaml \
+#       rollout_engine=sglang_jax \
+#       agentic_grpo_config.max_turns=10
+
+# ========================
+# Model
+# ========================
+model_config:
+  model_name: "qwen3_32b"
+  model_id: "Qwen/Qwen3-32B"
+  model_source: "huggingface"
+  # model_path: "/path/to/local/Qwen3-32B"
+  rng_seed: 42
+  model_display: false
+
+actor_model_config:
+  # Overridden at runtime when split_mesh_config.enabled=true.
+  # Kept here so HyperParameters validation passes; values are ignored.
+  mesh:
+    shape: "(4,1)"
+    axis_names: "('fsdp','tp')"
+
+reference_model_config:
+  mesh:
+    shape: "(4,1)"
+    axis_names: "('fsdp','tp')"
+
+rollout_model_config:
+  mesh:
+    shape: "(4,1)"
+    axis_names: "('fsdp','tp')"
+
+tokenizer_config:
+  tokenizer_type: "huggingface"
+  tokenizer_path: "Qwen/Qwen3-32B"
+  add_bos: false
+  add_eos: false
+
+# ========================
+# Data module
+# ========================
+# examples.deepswe.deepswe_data.create_dataset(**data_config)
+# The module also exposes batch_fn used as custom_batch_fn.
+data_module: "examples.deepswe.deepswe_data"
+data_config:
+  dataset_name: "R2E-Gym/R2E-Gym-V1"
+  dataset_split: "train"
+  # cache_dir defaults to <cwd>/dataset_cache
+  shuffle: true
+  seed: 42
+
+# "problem_statement" is the prompt key in R2E-Gym examples
+prompt_key: "problem_statement"
+
+# ========================
+# Training loop
+# ========================
+seed: 42
+batch_size: 1
+num_batches: 20
+num_train_epochs: 1
+train_fraction: 1.0
+
+# ========================
+# Reward functions
+# ========================
+# DeepSWE rewards come from the SWEEnv environment, not a static function.
+reward_functions: []
+
+verl_compatible: false
+
+# ========================
+# Rollout engine
+# ========================
+# One of: "vanilla", "vllm", "sglang_jax"
+rollout_engine: "vllm"
+offload_to_cpu: false
+
+rollout_config:
+  max_prompt_length: 4096
+  total_generation_steps: 8192  # = max_response_length per turn
+  temperature: 1.0
+  top_p: null
+  top_k: null
+  # kv_cache_size = max_prompt_length + total_generation_steps * context_ratio * max_turns
+
+# vLLM config (used when rollout_engine=vllm)
+vllm_config:
+  # model_version defaults to actor_model_config.model_id
+  hbm_utilization: 0.4
+  tpu_backend_type: "jax"
+  server_mode: true
+  async_scheduling: true
+  # max_num_seqs = rollout_micro_batch_size * num_generations
+  max_num_seqs: 2
+  # max_num_batched_tokens = (max_num_seqs * kv_cache_size) // 4  (computed)
+  kwargs:
+    kv_cache_metrics: true
+    disable_log_stats: false
+    enable_prefix_caching: true
+
+# SGLang-JAX config (used when rollout_engine=sglang_jax)
+sglang_jax_config:
+  mem_fraction_static: 0.9
+  init_with_random_weights: true
+  disable_radix_cache: false
+  enable_deterministic_sampling: false
+  chunked_prefill_size: 2048
+  page_size: 128
+  use_sort_for_toppk_minp: false
+
+# ========================
+# Chat parser
+# ========================
+chat_parser_config:
+  type: "qwen"
+
+# ========================
+# Agent / env
+# ========================
+agent_class_path: "examples.deepswe.swe_agent.SWEAgent"
+agent_kwargs: {}
+env_class_path: "examples.deepswe.swe_env.SWEEnv"
+env_kwargs:
+  max_steps: 20
+
+# ========================
+# Kubernetes
+# ========================
+kubernetes_config:
+  kubeconfig: "~/.kube/config"
+  node_selector_key: "cloud.google.com/gke-nodepool"
+  node_selector_val: "deepswe-cpu-pool"
+
+# ========================
+# Split mesh (auto-split devices in half)
+# ========================
+# Qwen3-32B has 8 KV heads → rollout_tp = GCD(split, 8)
+split_mesh_config:
+  enabled: true
+  rollout_num_kv_heads: 8
+
+# ========================
+# Agentic GRPO algorithm (multi-turn)
+# ========================
+agentic_grpo_config:
+  num_generations: 2
+  num_iterations: 1
+  # max_response_length = rollout_config.total_generation_steps  (auto)
+  beta: 0.001
+  epsilon: 0.2
+  epsilon_high: 0.28
+  system_prompt: ""  # defaults to SWE_SYSTEM_PROMPT inside SWEAgent
+  max_concurrency: 1
+  off_policy_steps: 0
+  # Multi-turn: episode_timeout = per_turn_timeout_secs * max_turns
+  max_turns: 20
+  per_turn_timeout_secs: 300
+  # KV cache = max_prompt + total_generation_steps * context_ratio * max_turns
+  context_ratio: 2
+
+# ========================
+# RL training
+# ========================
+rl_training_config:
+  max_steps: 10
+  eval_every_n_steps: 10
+  mini_batch_size: 1
+  train_micro_batch_size: 1
+  rollout_micro_batch_size: 1
+  compute_logps_micro_batch_size: 1
+  actor_optimizer_config:
+    opt_type: "adamw"
+    learning_rate: 1.0e-6
+    schedule_type: "warmup_cosine_decay_schedule"
+    init_value: 0.0
+    end_value: 0.0
+    warmup_ratio: 0.1
+    b1: 0.9
+    b2: 0.99
+    weight_decay: 0.1
+    max_grad_norm: 0.1
+  metrics_logging_options:
+    log_dir: "/tmp/tensorboard/deepswe"
+    flush_every_n_steps: 2
+  checkpointing_options:
+    save_interval_steps: 500
+    max_to_keep: 4
+  checkpoint_root_directory: "/tmp/tunix/checkpoints/deepswe"
